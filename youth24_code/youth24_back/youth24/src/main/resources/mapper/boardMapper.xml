@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+   
+<mapper namespace="com.example.youth.board.dao.BoardDAO">
+
+	<select id="count" resultType="int">
+		SELECT count(*) FROM TB_QNA WHERE QNA_STATUS in(1,2) AND QNA_KEYNUM = QNA_REF
+	</select>
+	
+	
+	
+	<resultMap type="BoardDTO" id="listSelect" autoMapping="true">
+		<association property="membersDTO" javaType="MembersDTO">
+			<result column="USER_NAME" property="userName"/>
+			<result column="USER_ID" property="userId"/>
+		</association>
+	</resultMap>
+	
+	<select id="list" parameterType="BoardPageDTO" resultMap="listSelect">
+		<![CDATA[ 
+		SELECT b.*
+			FROM(SELECT rownum AS rm, a.*
+                FROM(SELECT q.*,m.USER_NAME, m.USER_ID FROM TB_QNA q, TB_MEMBER m
+                WHERE q.USER_KEYNUM=m.USER_KEYNUM(+) AND q.QNA_KEYNUM = q.QNA_REF AND q.QNA_STATUS in(1,2)
+				ORDER BY q.QNA_REF DESC,q.QNA_KEYNUM ASC)a)b
+		WHERE b.rm>=#{startRow} AND b.rm<=#{endRow}
+		]]>
+	</select>
+	
+	
+	
+	<insert id="save" parameterType="BoardDTO">
+		INSERT INTO TB_QNA(QNA_KEYNUM, USER_KEYNUM, QNA_TITLE, QNA_CONTENT, QNA_REGDATE, QNA_READCOUNT, QNA_REF, QNA_STATUS, QNA_SECRET)
+		VALUES(SEQ_QNA_KEYNUM.nextval, (select USER_KEYNUM FROM TB_MEMBER WHERE USER_ID = #{userId, jdbcType=VARCHAR}), #{qnaTitle, jdbcType=VARCHAR}, #{qnaContent, jdbcType=VARCHAR}, sysdate, 0, 
+				SEQ_QNA_KEYNUM.nextval,1, #{qnaSecret})
+	</insert>
+	
+
+	<update id="readCount" parameterType="int">
+		UPDATE TB_QNA
+		SET QNA_READCOUNT = QNA_READCOUNT + 1
+		WHERE QNA_KEYNUM=#{qnaKeynum}
+	</update>
+	
+	<update id="statusChange" parameterType="int">
+		UPDATE TB_QNA
+		SET QNA_STATUS = 2
+		WHERE QNA_KEYNUM=#{qnaRef}
+	</update>
+	
+	
+	<resultMap type="BoardDTO" id="contentSelect" autoMapping="true">
+		<association property="membersDTO" javaType="MembersDTO" >
+			<result column="USER_NAME" property="userName"/>
+			<result column="USER_ID" property="userId"/>
+		</association>
+	</resultMap>
+	
+	<select id="content" parameterType="int" resultMap="contentSelect">
+		SELECT q.*, m.USER_NAME, m.USER_ID
+		FROM TB_QNA q, TB_MEMBER m
+		WHERE q.USER_KEYNUM=m.USER_KEYNUM(+) 
+		AND QNA_KEYNUM=#{qnaKeynum} AND q.QNA_STATUS in(1,2)
+	</select>
+
+
+	<update id="update" parameterType="BoardDTO">
+		UPDATE TB_QNA
+		SET QNA_TITLE=#{qnaTitle}, QNA_CONTENT=#{qnaContent},QNA_SECRET=#{qnaSecret}
+		WHERE QNA_KEYNUM=#{qnaKeynum}
+	</update>
+	
+	<update id="delete" parameterType="int">
+		UPDATE TB_QNA
+		SET QNA_STATUS = 0
+		WHERE QNA_KEYNUM=#{qnaKeynum}
+	</update> 
+	
+	<delete id="realDelete" parameterType="int">
+		delete FROM TB_QNA
+		WHERE QNA_KEYNUM=#{qnaKeynum}
+	</delete>
+	
+		<resultMap type="BoardDTO" id="admincontentSelect" autoMapping="true">
+		<association property="membersDTO" javaType="MembersDTO" >
+			<result column="USER_NAME" property="userName"/>
+			<result column="USER_ID" property="userId"/>
+		</association>
+	</resultMap>
+
+	<select id="admincontent" parameterType="int" resultMap="admincontentSelect">
+		SELECT q.*, m.USER_NAME, m.USER_ID
+		FROM TB_QNA q, TB_MEMBER m
+		WHERE q.USER_KEYNUM=m.USER_KEYNUM(+) AND q.ADMIN_KEYNUM IS NOT NULL
+		AND QNA_REF=#{qnaKeynum} AND q.QNA_STATUS in(1,2)
+	</select>
+
+</mapper>

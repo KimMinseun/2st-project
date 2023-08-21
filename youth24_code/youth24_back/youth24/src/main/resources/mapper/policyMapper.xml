@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+   
+<mapper namespace="com.example.youth.policy.dao.PolicyDAO">
+	
+	<!-- 정책정보 DB 저장하기 -->
+	<insert id="save" parameterType="PolicyDTO">
+		INSERT INTO TB_POLICY(POLICY_KEYNUM, POLICY_ID, POLICY_BIZTYPE, POLICY_BIZTYPECODE, 
+		POLICY_BIZTYPENAME, POLICY_NAME, POLICY_INTRODUCE, POLICY_VOLUME, POLICY_CONTENT, 
+		POLICY_AGE, POLICY_EMPSTATUS, POLICY_EDUCATION, POLICY_MAJOR, POLICY_SPLZ, 
+		POLICY_AGENTNAME, POLICY_REQUESTPERIOD, POLICY_REQUESTPROCESS, POLICY_PRSTNDTL, POLICY_URL, POLICY_IMAGES)
+		VALUES(policy_keynum_seq.nextval, #{policyId, jdbcType=VARCHAR}, #{policyBizType, jdbcType=VARCHAR}, 
+		#{policyBizTypeCode, jdbcType=VARCHAR}, #{policyBizTypeName, jdbcType=VARCHAR}, #{policyName, jdbcType=VARCHAR}, 
+		#{policyIntroduce, jdbcType=VARCHAR}, #{policyVolume, jdbcType=VARCHAR}, #{policyContent, jdbcType=VARCHAR}, 
+		#{policyAge, jdbcType=VARCHAR}, #{policyEmpStatus, jdbcType=VARCHAR}, #{policyEducation, jdbcType=VARCHAR}, #{policyMajor, jdbcType=VARCHAR}, 
+		#{policySplz, jdbcType=VARCHAR}, #{policyAgentName, jdbcType=VARCHAR}, #{policyRequestPeriod, jdbcType=VARCHAR}, 
+		#{policyRequestProcess, jdbcType=VARCHAR}, #{policyPrstnDtl, jdbcType=VARCHAR}, #{policyUrl, jdbcType=VARCHAR}, #{policyImages, jdbcType=VARCHAR}	
+		)
+	</insert>
+	
+	<!-- 정책정보 ID 가져오기(기등록 여부 체크) -->
+	<select id="getPolicyID" resultType="String">
+		SELECT POLICY_ID FROM TB_POLICY
+		WHERE POLICY_ID=#{POLICY_ID, jdbcType=VARCHAR}
+	</select>
+		
+		
+		
+	<resultMap type="PolicyDTO" id="mainlistSelect" autoMapping="true">
+		<association property="viewDTO" javaType="ViewDTO">
+			<result column="VIEW_SCRAPCNT" property="viewScrapcnt"/>
+		</association>
+	</resultMap>
+	
+	<!-- 정책정보 메인리스트용 가져오기 -->	
+	<select id="mainlist" parameterType="PolicyPageDTO" resultMap="mainlistSelect">
+		<![CDATA[ 
+		SELECT b.*
+			FROM(SELECT rownum AS rm, a.*
+               	FROM(SELECT b.*, v.VIEW_SCRAPCNT FROM TB_POLICY b, TB_VIEWSTATS v
+               	WHERE b.POLICY_KEYNUM = v.POLICY_KEYNUM
+				ORDER BY v.VIEW_SCRAPCNT DESC, b.POLICY_KEYNUM DESC)a)b
+		WHERE b.rm>=1 AND b.rm<=8
+		]]>
+	</select>
+	
+	<!-- 메인리스트용 갯수 가져오기 -->	
+	<select id="countformain" resultType="int">
+		SELECT count(*) FROM TB_POLICY b, TB_VIEWSTATS v WHERE b.POLICY_KEYNUM = v.POLICY_KEYNUM
+	</select>
+
+
+	<!-- 정책정보개수 가져오기 -->	
+	<select id="count" resultType="int">
+		SELECT count(*) FROM TB_POLICY
+	</select>
+	
+	<!--정책 정보 수정하기 -->
+	<update id="update" parameterType="PolicyDTO">
+		UPDATE tb_policy
+		SET POLICY_ID=#{policyId, jdbcType=VARCHAR}, POLICY_BIZTYPE=#{policyBizType, jdbcType=VARCHAR}, POLICY_BIZTYPECODE=#{policyBizTypeCode, jdbcType=VARCHAR}, 
+		POLICY_BIZTYPENAME=#{policyBizTypeName, jdbcType=VARCHAR}, POLICY_NAME=#{policyName, jdbcType=VARCHAR}, POLICY_INTRODUCE=#{policyIntroduce, jdbcType=VARCHAR}, 
+		POLICY_VOLUME=#{policyVolume, jdbcType=VARCHAR}, POLICY_CONTENT=#{policyContent, jdbcType=VARCHAR}, POLICY_AGE=#{policyAge, jdbcType=VARCHAR}, 
+		POLICY_EMPSTATUS=#{policyEmpStatus, jdbcType=VARCHAR}, POLICY_EDUCATION=#{policyEducation, jdbcType=VARCHAR}, POLICY_MAJOR=#{policyMajor, jdbcType=VARCHAR}, 
+		POLICY_SPLZ=#{policySplz, jdbcType=VARCHAR}, POLICY_AGENTNAME=#{policyAgentName, jdbcType=VARCHAR}, 
+		POLICY_REQUESTPERIOD=#{policyRequestPeriod, jdbcType=VARCHAR}, POLICY_REQUESTPROCESS=#{policyRequestProcess, jdbcType=VARCHAR}, 
+		POLICY_PRSTNDTL=#{policyPrstnDtl, jdbcType=VARCHAR}, POLICY_URL=#{policyUrl, jdbcType=VARCHAR}
+			<if test="policyImages!=null">
+				,POLICY_IMAGES=#{policyImages, jdbcType=VARCHAR}
+			</if>
+		WHERE POLICY_KEYNUM=#{policyKeynum}
+	</update>
+	
+	<!-- 1개의 정책 정보만 가져오기 -->
+	<select id="content" parameterType="String" resultType="PolicyDTO">
+		SELECT * FROM TB_POLICY 
+		WHERE POLICY_ID=#{POLICY_ID, jdbcType=VARCHAR}
+	</select>
+	
+	<!--조회수 올리기 -->
+	<update id="readCount" parameterType="int">
+	UPDATE TB_VIEWSTATS
+	SET VIEW_CNT = VIEW_CNT + 1
+	WHERE VIEW_KEYNUM=#{VIEW_KEYNUM}
+	</update>
+	
+	<!--파일 이름 가져오기 -->
+	<select id="getFile" parameterType="int" resultType="string">
+		SELECT POLICY_IMAGES
+		FROM TB_POLICY
+		WHERE POLICY_KEYNUM=#{POLICY_KEYNUM}
+	</select>
+	
+	<!--정책정보 삭제하기 -->
+	<delete id="delete" parameterType="int">
+		DELETE FROM TB_POLICY
+		WHERE POLICY_KEYNUM=#{POLICY_KEYNUM}
+	</delete> 
+	
+	<!-- 파일 이름 삭제하기 -->
+	<update id="deleteFile" parameterType="int">
+		UPDATE TB_POLICY
+		SET POLICY_IMAGES=''
+		WHERE POLICY_KEYNUM=#{POLICY_KEYNUM}
+	</update>
+	
+	<!-- 정책 통계 등록하기 -->
+	<insert id="viewSave" parameterType="String">
+		INSERT INTO TB_VIEWSTATS(VIEW_KEYNUM, POLICY_ID, VIEW_GENDERCNT_M, VIEW_GENDERCNT_F, 
+		VIEW_AGECNT_10, VIEW_AGECNT_20, VIEW_AGECNT_30, VIEW_AGECNT_40, VIEW_AGECNT_50, 
+		VIEW_AGECNT_60, VIEW_EDUCNT_LESHSC, VIEW_EDUCNT_HSCGDT, VIEW_EDUCNT_CLG, VIEW_EDUCNT_PLTCLGGDT, 
+		VIEW_EDUCNT_CLGGDT, VIEW_EDUCNT_MSTNPHD, VIEW_EMPLOYMENT, VIEW_UNEMPLOYMENT, VIEW_CNT, VIEW_SCRAPCNT)
+		VALUES(SEQ_VIEW_KEYNUM.nextval, #{policyId}, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0	
+		)
+	</insert>
+	
+	<!-- 정책 통계 업데이트하기 -->
+	<update id="viewCount" parameterType="ViewDTO">
+	UPDATE TB_VIEWSTATS 
+	SET VIEW_AGECNT_10 = 
+			<![CDATA[ 
+		CASE WHEN TRUNC(MONTHS_BETWEEN(TRUNC(SYSDATE), (SELECT USER_BIRTHDATE FROM TB_MEMBER WHERE USER_ID = #{userId})) / 12) <= 19 
+			]]>
+		THEN VIEW_AGECNT_10 + 1 
+		ELSE VIEW_AGECNT_10 
+		END,
+		VIEW_AGECNT_20 = 
+		CASE WHEN TRUNC(MONTHS_BETWEEN(TRUNC(SYSDATE), (SELECT USER_BIRTHDATE FROM TB_MEMBER WHERE USER_ID = #{userId, jdbcType=VARCHAR})) / 12) BETWEEN 20 AND 29
+		THEN VIEW_AGECNT_20 + 1 
+		ELSE VIEW_AGECNT_20 
+		END,
+		VIEW_AGECNT_30 = 
+		CASE WHEN TRUNC(MONTHS_BETWEEN(TRUNC(SYSDATE), (SELECT USER_BIRTHDATE FROM TB_MEMBER WHERE USER_ID = #{userId, jdbcType=VARCHAR})) / 12) BETWEEN 30 AND 39
+		THEN VIEW_AGECNT_30 + 1 
+		ELSE VIEW_AGECNT_30 
+		END,
+		VIEW_AGECNT_40 = 
+		CASE WHEN TRUNC(MONTHS_BETWEEN(TRUNC(SYSDATE), (SELECT USER_BIRTHDATE FROM TB_MEMBER WHERE USER_ID = #{userId, jdbcType=VARCHAR})) / 12) BETWEEN 40 AND 49
+		THEN VIEW_AGECNT_40 + 1 
+		ELSE VIEW_AGECNT_40 
+		END,
+		VIEW_AGECNT_50 = 
+		CASE WHEN TRUNC(MONTHS_BETWEEN(TRUNC(SYSDATE), (SELECT USER_BIRTHDATE FROM TB_MEMBER WHERE USER_ID = #{userId, jdbcType=VARCHAR})) / 12) BETWEEN 50 AND 59
+		THEN VIEW_AGECNT_50 + 1 
+		ELSE VIEW_AGECNT_50 
+		END,
+		VIEW_AGECNT_60 = 
+		CASE WHEN TRUNC(MONTHS_BETWEEN(TRUNC(SYSDATE), (SELECT USER_BIRTHDATE FROM TB_MEMBER WHERE USER_ID = #{userId, jdbcType=VARCHAR})) / 12) BETWEEN 60 AND 69
+		THEN VIEW_AGECNT_60 + 1 
+		ELSE VIEW_AGECNT_60 
+		END,
+		VIEW_GENDERCNT_M = 
+	  CASE WHEN (SELECT USER_GENDER FROM TB_MEMBER WHERE USER_ID = #{userId, jdbcType=VARCHAR}) = '남성'
+	    THEN VIEW_GENDERCNT_M + 1 
+	    ELSE VIEW_GENDERCNT_M 
+	  END, 
+	  VIEW_GENDERCNT_F = 
+	  CASE WHEN (SELECT USER_GENDER FROM TB_MEMBER WHERE USER_ID = #{userId, jdbcType=VARCHAR}) = '여성'
+	    THEN VIEW_GENDERCNT_F + 1 
+	    ELSE VIEW_GENDERCNT_F 
+	  END,
+	  VIEW_EDUCNT_LESHSC =
+	  CASE WHEN (SELECT USER_EDUCATION FROM TB_MEMBER tm WHERE USER_ID = #{userId, jdbcType=VARCHAR}) ='고등학교 졸업 미만'
+	  	THEN VIEW_EDUCNT_LESHSC + 1
+	  	ELSE VIEW_EDUCNT_LESHSC
+	  END,
+	  VIEW_EDUCNT_HSCGDT =
+	  CASE WHEN (SELECT USER_EDUCATION FROM TB_MEMBER tm WHERE USER_ID = #{userId, jdbcType=VARCHAR}) = '고등학교 졸업'
+	  	THEN VIEW_EDUCNT_HSCGDT + 1
+	  	ELSE VIEW_EDUCNT_HSCGDT
+	  END,
+	  VIEW_EDUCNT_CLG = 
+	  CASE WHEN (SELECT USER_EDUCATION FROM TB_MEMBER tm WHERE USER_ID = #{userId, jdbcType=VARCHAR}) = '대학교 재학중'
+	  	THEN VIEW_EDUCNT_CLG + 1
+	  	ELSE VIEW_EDUCNT_CLG
+	  END,
+	  VIEW_EDUCNT_PLTCLGGDT = 
+	   CASE WHEN (SELECT USER_EDUCATION FROM TB_MEMBER tm WHERE USER_ID = #{userId, jdbcType=VARCHAR}) = '대학교 졸업 예정'
+	  	THEN VIEW_EDUCNT_PLTCLGGDT + 1
+	  	ELSE VIEW_EDUCNT_PLTCLGGDT
+	  END,
+	  VIEW_EDUCNT_CLGGDT =
+	   CASE WHEN (SELECT USER_EDUCATION FROM TB_MEMBER tm WHERE USER_ID = #{userId, jdbcType=VARCHAR}) = '대학교 졸업'
+	  	THEN VIEW_EDUCNT_CLGGDT + 1
+	  	ELSE VIEW_EDUCNT_CLGGDT
+	  END,
+	  VIEW_EDUCNT_MSTNPHD = 
+	  CASE WHEN (SELECT USER_EDUCATION FROM TB_MEMBER tm WHERE USER_ID = #{userId, jdbcType=VARCHAR}) = '석·박사'
+	  	THEN VIEW_EDUCNT_MSTNPHD + 1
+	  	ELSE VIEW_EDUCNT_MSTNPHD
+	  END,
+	  VIEW_EMPLOYMENT = 
+	   CASE WHEN (SELECT USER_EMPSTATUS FROM TB_MEMBER tm WHERE USER_ID = #{userId, jdbcType=VARCHAR})='근로중'
+	  	THEN VIEW_EMPLOYMENT + 1
+	  	ELSE VIEW_EMPLOYMENT
+	  END,
+	  VIEW_UNEMPLOYMENT =
+	  CASE WHEN (SELECT USER_EMPSTATUS FROM TB_MEMBER tm WHERE USER_ID = #{userId, jdbcType=VARCHAR}) = '구직중'
+	  	THEN VIEW_UNEMPLOYMENT + 1
+	  	ELSE VIEW_UNEMPLOYMENT
+	  END,
+	  VIEW_CNT = VIEW_CNT +1
+	WHERE POLICY_ID = #{policyId}
+	</update>
+	
+	<!-- 정책 통계 policy_keynum 업데이트하기 -->
+	<update id="viewUpdate" parameterType="String">				
+		UPDATE TB_VIEWSTATS
+		SET policy_keynum = (SELECT policy_keynum FROM tb_policy WHERE policy_id =  #{policyId})
+		WHERE policy_id= #{policyId}
+	</update>
+			
+		<!-- 정책정보 policy_keynum 가져오기(기등록 여부 체크) -->
+	<select id="getPolicyKeynumFromView" resultType="String">
+		SELECT POLICY_KEYNUM FROM TB_VIEWSTATS
+		WHERE POLICY_ID=#{policyId}
+	</select>
+	
+	<!-- 정책정보 가져오기 -->
+	<select id="getViewData" resultType="ViewDTO">
+		SELECT * FROM TB_VIEWSTATS
+		WHERE POLICY_ID=#{policyId}
+	</select>
+	
+		<!-- 정책정보 검색리스트 가져오기 -->	
+	<select id="searchList" parameterType="PolicyPageDTO" resultType="PolicyDTO">
+		SELECT b.*
+			FROM(SELECT rownum AS rm, a.*
+               	FROM(SELECT b.* FROM tb_policy b
+     			<include refid="search"></include>
+				ORDER BY POLICY_KEYNUM DESC)a)b
+					<![CDATA[ 
+		WHERE b.rm>=#{startRow} AND b.rm<=#{endRow}
+		]]>
+	</select>
+	
+	<sql id="search">
+		<choose>
+			<when test="searchKey==''">
+				WHERE POLICY_NAME like '%'||#{searchWord}||'%'
+				OR POLICY_INTRODUCE like '%'||#{searchWord}||'%'
+				OR POLICY_CONTENT like '%'||#{searchWord}||'%'
+			</when>
+			<otherwise>
+				WHERE ${searchKey} like '%'||#{searchWord}||'%'
+			</otherwise>
+		</choose>
+	</sql>
+	
+	<!-- 정책정보개수 가져오기 -->	
+	<select id="countForSearch" resultType="int">
+		SELECT count(*) FROM TB_POLICY
+		<include refid="search"></include>
+	</select>
+	
+	<!-- 정책정보 검색리스트 최종버전 가져오기 -->	
+	
+	
+	<resultMap type="PolicyDTO" id="searchlistSelect" autoMapping="true">
+		<association property="viewDTO" javaType="ViewDTO">
+			<result column="VIEW_SCRAPCNT" property="viewScrapcnt"/>
+		</association>
+	</resultMap>
+	
+	<select id="searchListFinal" parameterType="SearchPageDTO" resultMap="searchlistSelect">
+		SELECT b.*
+			FROM(SELECT rownum AS rm, a.*
+           	FROM(SELECT b.*, v.VIEW_SCRAPCNT FROM tb_policy b, TB_VIEWSTATS v
+           	WHERE b.POLICY_ID = v.POLICY_ID
+           	<include refid="search1"></include>
+			<include refid="policyTypeSearch"></include>
+			<include refid="policyDistrictSearch"></include>
+			ORDER BY b.POLICY_KEYNUM DESC)a)b
+				<![CDATA[ 
+		WHERE b.rm>=#{startRow} AND b.rm<=#{endRow}
+		]]>
+	</select>
+	
+	<sql id="policyTypeSearch">
+		 AND 
+		<foreach item="item" index="index" collection="bizTycdSelList" open="(" separator="or" close=")">
+			POLICY_BIZTYPENAME like '%'||#{item}||'%'
+		</foreach>
+	</sql>
+	
+	<sql id="policyDistrictSearch">
+		AND
+		<foreach collection="srchPolyBizSecdList" item="item" open="(" close=")" separator="or">
+			<if test="item=='중앙부처'">
+				POLICY_BIZTYPE like '%'||#{item}||'%'
+			</if>
+			<if test="item!='중앙부처'">
+				 POLICY_BIZTYPECODE like '%'||#{item}||'%'
+			</if>
+		</foreach>
+	</sql>
+	
+	<sql id="search1">
+		AND (POLICY_NAME like '%'||#{searchWord}||'%'
+		OR POLICY_INTRODUCE like '%'||#{searchWord}||'%'
+		OR POLICY_CONTENT like '%'||#{searchWord}||'%')
+	</sql>
+	<sql id="search2">
+		WHERE (POLICY_NAME like '%'||#{searchWord}||'%'
+		OR POLICY_INTRODUCE like '%'||#{searchWord}||'%'
+		OR POLICY_CONTENT like '%'||#{searchWord}||'%')
+	</sql>
+	
+		<!-- 정책정보개수 가져오기 -->	
+	<select id="countForSearchFinal" resultType="int" parameterType="SearchPageDTO">
+		SELECT count(*) FROM TB_POLICY
+		<include refid="search2"></include>
+		<include refid="policyTypeSearch"></include>
+		<include refid="policyDistrictSearch"></include>	
+	</select>
+	
+	
+</mapper>

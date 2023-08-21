@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+   
+<mapper namespace="com.policy.admin.policy.dao.PolicyDAO">
+	
+	<!-- 정책정보 DB 저장하기 -->
+	<insert id="save" parameterType="PolicyDTO">
+		INSERT INTO TB_POLICY(POLICY_KEYNUM, POLICY_ID, POLICY_BIZTYPE, POLICY_BIZTYPECODE, 
+		POLICY_BIZTYPENAME, POLICY_NAME, POLICY_INTRODUCE, POLICY_VOLUME, POLICY_CONTENT, 
+		POLICY_AGE, POLICY_EMPSTATUS, POLICY_EDUCATION, POLICY_MAJOR, POLICY_SPLZ, 
+		POLICY_AGENTNAME, POLICY_REQUESTPERIOD, POLICY_REQUESTPROCESS, POLICY_PRSTNDTL, POLICY_URL, POLICY_IMAGES)
+		VALUES(SEQ_POLICY_KEYNUM.nextval, #{policyId, jdbcType=VARCHAR}, #{policyBizType, jdbcType=VARCHAR}, 
+		#{policyBizTypeCode, jdbcType=VARCHAR}, #{policyBizTypeName, jdbcType=VARCHAR}, #{policyName, jdbcType=VARCHAR}, 
+		#{policyIntroduce, jdbcType=VARCHAR}, #{policyVolume, jdbcType=VARCHAR}, #{policyContent, jdbcType=VARCHAR}, 
+		#{policyAge, jdbcType=VARCHAR}, #{policyEmpStatus, jdbcType=VARCHAR}, #{policyEducation, jdbcType=VARCHAR}, #{policyMajor, jdbcType=VARCHAR}, 
+		#{policySplz, jdbcType=VARCHAR}, #{policyAgentName, jdbcType=VARCHAR}, #{policyRequestPeriod, jdbcType=VARCHAR}, 
+		#{policyRequestProcess, jdbcType=VARCHAR}, #{policyPrstnDtl, jdbcType=VARCHAR}, #{policyUrl, jdbcType=VARCHAR}, #{policyImages, jdbcType=VARCHAR}	
+		)
+	</insert>
+	
+	<!-- 정책정보 ID 가져오기(기등록 여부 체크) -->
+	<select id="getPolicyID" resultType="String">
+		SELECT POLICY_ID FROM TB_POLICY
+		WHERE POLICY_ID=#{policyId, jdbcType=VARCHAR}
+	</select>
+		
+	<!-- 정책정보 전체리스트 가져오기 -->	
+	<select id="list" parameterType="PolicyPageDTO" resultType="PolicyDTO">
+		<![CDATA[ 
+		SELECT b.*
+			FROM(SELECT rownum AS rm, a.*
+               	FROM(SELECT b.* FROM tb_policy b
+				ORDER BY POLICY_KEYNUM DESC)a)b
+		WHERE b.rm>=#{startRow} AND b.rm<=#{endRow}
+		]]>
+	</select>
+
+	
+
+	<!-- 정책정보개수 가져오기 -->	
+	<select id="count" resultType="int">
+		SELECT count(*) FROM TB_POLICY
+	</select>
+	
+	<!--정책 정보 수정하기 -->
+	<update id="update" parameterType="PolicyDTO">
+		UPDATE tb_policy
+		SET POLICY_ID=#{policyId, jdbcType=VARCHAR}, POLICY_BIZTYPE=#{policyBizType, jdbcType=VARCHAR}, POLICY_BIZTYPECODE=#{policyBizTypeCode, jdbcType=VARCHAR}, 
+		POLICY_BIZTYPENAME=#{policyBizTypeName, jdbcType=VARCHAR}, POLICY_NAME=#{policyName, jdbcType=VARCHAR}, POLICY_INTRODUCE=#{policyIntroduce, jdbcType=VARCHAR}, 
+		POLICY_VOLUME=#{policyVolume, jdbcType=VARCHAR}, POLICY_CONTENT=#{policyContent, jdbcType=VARCHAR}, POLICY_AGE=#{policyAge, jdbcType=VARCHAR}, 
+		POLICY_EMPSTATUS=#{policyEmpStatus, jdbcType=VARCHAR}, POLICY_EDUCATION=#{policyEducation, jdbcType=VARCHAR}, POLICY_MAJOR=#{policyMajor, jdbcType=VARCHAR}, 
+		POLICY_SPLZ=#{policySplz, jdbcType=VARCHAR}, POLICY_AGENTNAME=#{policyAgentName, jdbcType=VARCHAR}, 
+		POLICY_REQUESTPERIOD=#{policyRequestPeriod, jdbcType=VARCHAR}, POLICY_REQUESTPROCESS=#{policyRequestProcess, jdbcType=VARCHAR}, 
+		POLICY_PRSTNDTL=#{policyPrstnDtl, jdbcType=VARCHAR}, POLICY_URL=#{policyUrl, jdbcType=VARCHAR}
+			<if test="policyImages!=null">
+				,POLICY_IMAGES=#{policyImages, jdbcType=VARCHAR}
+			</if>
+		WHERE POLICY_KEYNUM=#{policyKeynum}
+	</update>
+	
+	<!-- 1개의 정책 정보만 가져오기 -->
+	<select id="content" parameterType="int" resultType="PolicyDTO">
+		SELECT * FROM TB_POLICY 
+		WHERE POLICY_KEYNUM=#{policyKeynum}
+	</select>
+	
+	<!--조회수 올리기 -->
+	<update id="readCount" parameterType="int">
+	UPDATE TB_VIEWSTATS
+	SET VIEW_CNT = VIEW_CNT + 1
+	WHERE VIEW_KEYNUM=#{viewKeynum}
+	</update>
+	
+	<!--파일 이름 가져오기 -->
+	<select id="getFile" parameterType="int" resultType="string">
+		SELECT POLICY_IMAGES
+		FROM TB_POLICY
+		WHERE POLICY_KEYNUM=#{policyKeynum}
+	</select>
+	
+	<!--정책정보 삭제하기 -->
+	<delete id="delete" parameterType="int">
+		DELETE FROM TB_POLICY
+		WHERE POLICY_KEYNUM=#{policyKeynum}
+	</delete> 
+	
+	<!-- 파일 이름 삭제하기 -->
+	<update id="deleteFile" parameterType="int">
+		UPDATE TB_POLICY
+		SET POLICY_IMAGES=''
+		WHERE POLICY_KEYNUM=#{policyKeynum}
+	</update>
+	
+	<!-- 정책정보 검색리스트 가져오기 -->	
+	<select id="searchList" parameterType="PolicyPageDTO" resultType="PolicyDTO">
+	
+		SELECT b.*
+			FROM(SELECT rownum AS rm, a.*
+               	FROM(SELECT b.* FROM tb_policy b
+     			<include refid="search"></include>
+				ORDER BY POLICY_KEYNUM DESC)a)b
+					<![CDATA[ 
+		WHERE b.rm>=#{startRow} AND b.rm<=#{endRow}
+		]]>
+	</select>
+	
+	<sql id="search">
+		<choose>
+			<when test="searchKey==''">
+				WHERE POLICY_NAME like '%'||#{searchWord}||'%'
+				OR POLICY_INTRODUCE like '%'||#{searchWord}||'%'
+				OR POLICY_CONTENT like '%'||#{searchWord}||'%'
+			</when>
+			<otherwise>
+				WHERE ${searchKey} like '%'||#{searchWord}||'%'
+			</otherwise>
+		</choose>
+	</sql>
+	
+		<!-- 정책정보개수 가져오기 -->	
+	<select id="countForSearch" resultType="int">
+		SELECT count(*) FROM TB_POLICY
+		<include refid="search"></include>
+	</select>
+	
+		<!-- 정책 통계 등록하기 -->
+	<insert id="viewSave" parameterType="String">
+		INSERT INTO TB_VIEWSTATS(VIEW_KEYNUM, POLICY_ID, VIEW_GENDERCNT_M, VIEW_GENDERCNT_F, 
+		VIEW_AGECNT_10, VIEW_AGECNT_20, VIEW_AGECNT_30, VIEW_AGECNT_40, VIEW_AGECNT_50, 
+		VIEW_AGECNT_60, VIEW_EDUCNT_LESHSC, VIEW_EDUCNT_HSCGDT, VIEW_EDUCNT_CLG, VIEW_EDUCNT_PLTCLGGDT, 
+		VIEW_EDUCNT_CLGGDT, VIEW_EDUCNT_MSTNPHD, VIEW_EMPLOYMENT, VIEW_UNEMPLOYMENT, VIEW_CNT, VIEW_SCRAPCNT)
+		VALUES(SEQ_VIEW_KEYNUM.nextval, #{policyId}, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0	
+		)
+	</insert>
+	
+		<!-- 정책 통계 policy_keynum 업데이트하기 -->
+	<update id="viewUpdate" parameterType="String">				
+		UPDATE TB_VIEWSTATS
+		SET policy_keynum = (SELECT policy_keynum FROM tb_policy WHERE policy_id =  #{policyId})
+		WHERE policy_id= #{policyId}
+	</update>
+</mapper>

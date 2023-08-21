@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<mapper namespace="com.policy.admin.admin.dao.AdminDAO">
+   
+   <!-- 회원가입 -->
+	<insert id="insertAdmin" parameterType="AdminDTO">
+      <![CDATA[
+        INSERT INTO TB_ADMIN(ADMIN_KEYNUM, ADMIN_ID, ADMIN_PASSWORD, ADMIN_NAME, ADMIN_STATUS)
+        VALUES (SEQ_ADMIN_KEYNUM.nextval, #{adminId}, #{adminPassword}, #{adminName}, 0)
+      ]]>
+	</insert>
+
+   <!-- 아이디 중복처리-->
+    <select id="idCheck" parameterType="string" resultType="int">
+	   SELECT COUNT(ADMIN_ID)
+	   FROM TB_ADMIN
+	   WHERE ADMIN_ID = #{adminId} AND ADMIN_STATUS = 0  
+    </select>
+
+   <!-- 로그인 시 관리자 정보 가져오기 -->  
+    <select id="adminInfo" parameterType="string" resultType="AdminDTO">
+      SELECT * FROM TB_ADMIN
+      WHERE ADMIN_ID = #{adminId} AND ADMIN_STATUS = 0
+    </select>
+    
+    	<!--특정 사용자 조회 -->	
+	<select id="admincontent" parameterType="int" resultType="AdminDTO">
+		SELECT *
+		FROM TB_ADMIN
+		WHERE ADMIN_KEYNUM=#{adminKeynum}
+	</select>
+	
+   
+      <!-- 관리자 탈퇴-->
+   <update id="adminDelete" parameterType="AdminDTO">
+	UPDATE TB_ADMIN
+		SET ADMIN_STATUS = 1
+		WHERE ADMIN_KEYNUM=#{adminKeynum}
+   </update>
+   
+   <!-- 사용자 카운트-->
+    <select id="userCount" resultType="int">
+	  SELECT count(*) 
+	  FROM TB_MEMBER
+	  WHERE USER_STATUS = 0
+    </select> 
+   
+   <!-- 사용자정보 가져오기-->
+    <resultMap type="MembersDTO" id="listSelect" autoMapping="true">
+      <result column="USER_ID" property="userId" />
+	</resultMap>  
+   
+   <select id="userList" parameterType="PageDTO" resultMap="listSelect">
+	  <![CDATA[ 
+        SELECT tb.*
+		FROM(SELECT rownum AS rm, a.*
+		FROM(SELECT tb.*
+			 FROM TB_MEMBER tb
+			 WHERE USER_STATUS = 0
+		     ORDER BY USER_KEYNUM DESC
+		     )a
+		     )tb
+		WHERE tb.rm>=#{startRow} AND tb.rm<=#{endRow}
+	  ]]>    
+   </select>
+   
+   <!-- 사용자 탈퇴-->
+   <update id="userDelete" parameterType="MembersDTO">
+	UPDATE TB_MEMBER
+		SET USER_STATUS = 1
+		WHERE USER_KEYNUM=#{userKeynum}
+   </update>
+   
+	<!-- 사용자 조회 -->	
+	<select id="searchList" parameterType="PageDTO" resultType="MembersDTO">
+	
+		SELECT b.*
+			FROM(SELECT rownum AS rm, a.*
+               	FROM(SELECT b.* FROM TB_MEMBER b
+     			<include refid="search"></include>
+				ORDER BY USER_KEYNUM DESC)a)b
+					<![CDATA[ 
+		WHERE b.rm>=#{startRow} AND b.rm<=#{endRow}
+		]]>
+	</select>
+	
+	<sql id="search">
+		<choose>
+			<when test="searchKey==''">
+		
+			 WHERE USER_STATUS = 0
+			</when>
+			<otherwise>
+				WHERE ${searchKey} like '%'||#{searchWord}||'%'
+			</otherwise>
+		</choose>
+	</sql>
+	
+	<!--특정 사용자 조회 -->	
+	<select id="content" parameterType="int" resultType="MembersDTO">
+		SELECT *
+		FROM TB_MEMBER
+		WHERE USER_KEYNUM=#{userKeynum}
+	</select>
+	
+		<!-- 사용자 카운트 -->	
+	<select id="countForSearch" resultType="int">
+		SELECT count(*) FROM TB_MEMBER
+		<include refid="search"></include>
+	</select>
+	
+	
+	<!-- 관리자 조회 -->	
+	<select id="searchAdminList" parameterType="PageDTO" resultType="AdminDTO">
+		SELECT b.*
+			FROM(SELECT rownum AS rm, a.*
+               	FROM(SELECT b.* FROM TB_ADMIN b
+     			<include refid="search2"></include>
+				ORDER BY ADMIN_KEYNUM DESC)a)b
+					<![CDATA[ 
+		WHERE b.rm>=#{startRow} AND b.rm<=#{endRow}
+		]]>
+	</select>
+	
+	<sql id="search2">
+		<choose>
+			<when test="searchKey==''">
+		
+			 WHERE ADMIN_STATUS = 0
+			</when>
+			<otherwise>
+				WHERE ${searchKey} like '%'||#{searchWord}||'%'
+			</otherwise>
+		</choose>
+	</sql>
+	
+		<!-- 관리자 카운트 -->	
+	<select id="countForSearchAdmin" resultType="int">
+		SELECT count(*) FROM TB_ADMIN
+		<include refid="search2"></include>
+	</select>
+	
+	
+	<!-- ///////////////////////////////////////////////////////////////////////-->
+   
+   <!-- 사용자 조회 카운트 -->
+   
+   <!--
+   <select id="searchUserCount" parameterType="map" resultType="int">
+	   SELECT count(*) FROM TB_MEMBER
+		<include refid="search2"></include>
+		<include refid="policyTypeSearch"></include>
+		<include refid="policyDistrictSearch"></include>
+   </select>
+   -->
+   
+   <!-- 사용자 조회-->
+    <!--
+   <select id="searchUser" parameterType="PageDTO" resultType="MembersDTO">
+		SELECT b.*
+			FROM(SELECT rownum AS rm, a.*
+               	FROM(SELECT b.* FROM TB_MEMBER b
+     			<include refid="search"></include>
+				ORDER BY USER_KEYNUM DESC)a)b
+					<![CDATA[ 
+		WHERE b.rm>=#{startRow} AND b.rm<=#{endRow}
+		]]>
+	</select>
+	   -->
+		
+   <!-- 
+   <select id="userSearch" parameterType="string" resultType="MembersDTO">
+	   SELECT *
+	   FROM TB_MEMBER
+	   WHERE USER_ID = #{userId} OR USER_NAME = #{userName} AND USER_STATUS = 0
+   </select>
+   -->
+
+  
+</mapper>

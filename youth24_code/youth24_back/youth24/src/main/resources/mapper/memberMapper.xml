@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<mapper namespace="com.example.youth.member.dao.MembersDAO">
+
+   <!-- 회원가입 -->
+    <insert id="insertMember" parameterType="MembersDTO">
+    <![CDATA[
+        INSERT INTO TB_MEMBER(USER_KEYNUM, USER_ID, USER_PASSWORD, USER_NAME, USER_BIRTHDATE, 
+               USER_GENDER, USER_ADDRESS, USER_DISTRICT, USER_PHONE, USER_EDUCATION, USER_EMPSTATUS, USER_STATUS)
+        VALUES (user_keynum_seq.nextval, #{userId}, #{userPassword}, #{userName, jdbcType=VARCHAR}, #{userBirthdate, jdbcType=VARCHAR}, #{userGender, jdbcType=VARCHAR}, 
+        		#{userAddress, jdbcType=VARCHAR}, #{userDistrict, jdbcType=VARCHAR}, #{userPhone, jdbcType=VARCHAR}, #{userEducation, jdbcType=VARCHAR} , #{userEmpstatus, jdbcType=VARCHAR}, 0)
+    ]]>
+   </insert>
+   
+   <!-- 아이디 중복처리-->
+   <select id="idCheck" parameterType="string" resultType="int">
+	   SELECT COUNT(USER_ID)
+	   FROM TB_MEMBER
+	   WHERE USER_ID = #{userId} AND USER_STATUS = 0  
+   </select>
+
+	<!-- 로그인 시 회원정보 가져오기 -->
+   <select id="userInfo" parameterType="string" resultType="MembersDTO">
+      SELECT * FROM TB_MEMBER
+      WHERE USER_ID = #{userId} AND USER_STATUS = 0
+   </select>
+   
+    <!-- 아이디 찾기-->
+   <select id="FindId" parameterType="MembersDTO" resultType="string">
+      SELECT USER_ID 
+      FROM TB_MEMBER
+      WHERE USER_NAME = #{userName} AND USER_PHONE = #{userPhone} AND USER_STATUS = 0
+   </select>
+   
+   <!-- 본인 확인-->
+   <select id="InfoCheck" parameterType="MembersDTO" resultType="String">
+	   SELECT * 
+	   FROM TB_MEMBER
+	   WHERE USER_ID = #{userId} AND USER_NAME = #{userName} AND USER_PHONE = #{userPhone} AND USER_STATUS = 0
+   </select>
+   
+   <!-- 로그인 전 비밀번호 재설정-->
+   <update id="pwReset" parameterType="MembersDTO">
+    UPDATE TB_MEMBER
+    SET USER_PASSWORD = #{userPassword}
+    WHERE USER_ID = #{userId} AND USER_STATUS = 0
+   </update>
+   
+   <!-- 로그인 후 회원정보 수정 -->
+   <update id="infoUpdate" parameterType="MembersDTO">
+	UPDATE TB_MEMBER
+	SET USER_PHONE = #{userPhone}, USER_ADDRESS = #{userAddress}, USER_DISTRICT = #{userDistrict}
+	, USER_EDUCATION = #{userEducation}, USER_EMPSTATUS = #{userEmpstatus}
+	WHERE USER_ID = #{userId} AND USER_STATUS = 0
+   </update>
+   
+   <!-- 비밀번호 수정 전 현재 비밀번호 확인-->
+   <select id="pwCheck" parameterType="MembersDTO" resultType="MembersDTO">
+	   SELECT * FROM TB_MEMBER
+	   WHERE USER_ID = #{userId}
+   </select>
+   
+   <!-- 로그인 후 비밀번호 수정-->
+   <update id="passwordUpdate" parameterType="MembersDTO">
+	UPDATE TB_MEMBER
+	SET USER_PASSWORD = #{userPassword}
+	WHERE USER_ID = #{userId} AND USER_STATUS = 0
+   </update>
+
+   <!-- 회원 탈퇴-->
+   <update id="userDelete" parameterType="MembersDTO">
+	UPDATE TB_MEMBER
+	SET USER_STATUS = 1
+	WHERE USER_ID = #{userId} AND USER_NAME = #{userName} AND USER_STATUS = 0
+   </update>
+   
+   
+  
+</mapper>

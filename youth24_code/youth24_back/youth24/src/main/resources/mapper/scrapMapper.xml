@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+   
+<mapper namespace="com.example.youth.policy.scrap.dao.ScrapDAO">
+
+	<select id="count" parameterType="int" resultType="int">
+		SELECT count(*) FROM TB_SCRAP s, TB_MEMBER m  WHERE s.USER_KEYNUM = m.USER_KEYNUM and s.USER_KEYNUM=#{userKeynum} AND m.USER_STATUS=0
+	</select>
+	
+	<resultMap type="ScrapDTO" id="listSelect" autoMapping="true">
+		<association property="membersDTO" javaType="MembersDTO">
+			<result column="USER_NAME" property="userName"/>
+		</association>
+		<association property="policyDTO" javaType="PolicyDTO">
+			<result column="POLICY_ID" property="policyId"/>
+			<result column="POLICY_NAME" property="policyName"/>
+			<result column="POLICY_BIZTYPECODE" property="policyBizTypeCode"/>
+			<result column="POLICY_BIZTYPENAME" property="policyBizTypeName"/>
+		</association>
+		<association property="viewDTO" javaType="ViewDTO">
+			<result column="VIEW_SCRAPCNT" property="viewScrapcnt"/>
+		</association>
+	</resultMap>
+	
+	<select id="list" parameterType="ScrapPageDTO" resultMap="listSelect">
+		<![CDATA[ 
+		SELECT b.*
+			FROM(SELECT rownum AS rm, a.*
+                FROM(SELECT q.*,m.USER_NAME, p.POLICY_ID,p.POLICY_NAME,p.POLICY_BIZTYPECODE, p.POLICY_BIZTYPENAME, v.VIEW_SCRAPCNT FROM TB_SCRAP q, TB_MEMBER m, TB_POLICY p, TB_VIEWSTATS v
+                WHERE q.USER_KEYNUM=m.USER_KEYNUM(+) AND p.POLICY_KEYNUM = q.POLICY_KEYNUM AND q.POLICY_KEYNUM = v.POLICY_KEYNUM and q.USER_KEYNUM=#{userKeynum} and m.USER_STATUS=0
+				ORDER BY q.SCRAP_KEYNUM ASC)a)b
+		WHERE b.rm>=#{startRow} AND b.rm<=#{endRow}
+		]]>
+	</select>
+
+	
+	<insert id="save" parameterType="ScrapDTO">
+		INSERT INTO TB_SCRAP(SCRAP_KEYNUM, USER_KEYNUM, POLICY_KEYNUM)
+		VALUES(SEQ_SCRAP_KEYNUM.nextval, (select USER_KEYNUM FROM TB_MEMBER WHERE USER_ID = #{userId, jdbcType=VARCHAR}), (select POLICY_KEYNUM FROM TB_POLICY WHERE POLICY_ID = #{policyId, jdbcType=VARCHAR}))
+	</insert>
+	
+	<!-- 정책 스크랩 여부 가져오기(기등록 여부 체크) -->
+	<select id="getPolicyKeynum" parameterType="ScrapDTO" resultType="ScrapDTO">
+	SELECT m.USER_ID, p.POLICY_ID FROM TB_SCRAP s, TB_MEMBER m, TB_POLICY p
+	WHERE s.USER_KEYNUM = m.USER_KEYNUM AND p.POLICY_KEYNUM = s.POLICY_KEYNUM
+	AND m.USER_ID = #{userId, jdbcType=VARCHAR} AND p.POLICY_ID = #{policyId, jdbcType=VARCHAR}
+	</select>
+
+
+	
+	<!-- 특정정책의 스크랩 리스트 가져오기 -->	
+	<select id="checklist" parameterType="map" resultType="int">
+		SELECT count(*) FROM TB_SCRAP s, TB_POLICY p, TB_MEMBER m
+		WHERE p.POLICY_KEYNUM = s.POLICY_KEYNUM AND s.USER_KEYNUM = m.USER_KEYNUM
+		AND p.POLICY_ID = #{policyId, jdbcType=VARCHAR} AND m.USER_KEYNUM = #{userKeynum} 
+	</select>
+
+	<delete id="delete" parameterType="map">
+		delete FROM TB_SCRAP
+		WHERE SCRAP_KEYNUM = (SELECT SCRAP_KEYNUM FROM TB_SCRAP s, TB_POLICY p, TB_MEMBER m
+		WHERE p.POLICY_KEYNUM = s.POLICY_KEYNUM AND s.USER_KEYNUM = m.USER_KEYNUM
+		AND p.POLICY_ID = #{policyId, jdbcType=VARCHAR} AND m.USER_KEYNUM =#{userKeynum})
+	</delete>
+	
+	<!--스크랩수 올리기 -->
+	<update id="scrapCount" parameterType="String">
+	UPDATE TB_VIEWSTATS
+	SET VIEW_SCRAPCNT = VIEW_SCRAPCNT + 1
+	WHERE POLICY_KEYNUM=(select POLICY_KEYNUM FROM TB_POLICY WHERE POLICY_ID =#{policyId, jdbcType=VARCHAR}) 
+	</update>
+	
+	<!--스크랩수 내리기 -->
+	<update id="scrapCountMinus" parameterType="String">
+	UPDATE TB_VIEWSTATS
+	SET VIEW_SCRAPCNT = VIEW_SCRAPCNT - 1
+	WHERE POLICY_KEYNUM=(select POLICY_KEYNUM FROM TB_POLICY WHERE POLICY_ID =#{policyId, jdbcType=VARCHAR}) 
+	</update>
+	
+</mapper>
